@@ -1,0 +1,815 @@
+import { useState, useEffect } from "react";
+
+const theme = {
+  bg: "#0a0f1a",
+  surface: "#111827",
+  surfaceHover: "#1a2335",
+  border: "#1e2d45",
+  accent: "#00c2ff",
+  accentDim: "#0077a8",
+  accentGlow: "rgba(0,194,255,0.15)",
+  success: "#00e5a0",
+  warning: "#ffb020",
+  danger: "#ff4d6a",
+  text: "#e8f0fe",
+  textMuted: "#6b7fa3",
+  textDim: "#3d5075",
+};
+
+const mockLeads = [
+  { id: 1, name: "Rajesh Kumar", company: "TechCorp India", email: "rajesh@techcorp.in", phone: "+91 98765 43210", status: "New", source: "LinkedIn", score: 85, created: "2026-03-01" },
+  { id: 2, name: "Priya Sharma", company: "Innovate Solutions", email: "priya@innovate.com", phone: "+91 87654 32109", status: "Contacted", source: "Referral", score: 72, created: "2026-03-03" },
+  { id: 3, name: "Ahmed Al-Rashid", company: "Gulf Dynamics", email: "ahmed@gulfdyn.ae", phone: "+971 50 123 4567", status: "Qualified", source: "Website", score: 91, created: "2026-03-05" },
+  { id: 4, name: "Sarah Mitchell", company: "NextGen Corp", email: "sarah@nextgen.com", phone: "+1 415 555 0123", status: "New", source: "Cold Call", score: 60, created: "2026-03-08" },
+  { id: 5, name: "Chen Wei", company: "Synergy Tech", email: "chen@synergy.sg", phone: "+65 9123 4567", status: "Lost", source: "Event", score: 45, created: "2026-02-20" },
+];
+
+const mockDeals = [
+  { id: 1, title: "IT Infrastructure Consulting", company: "TechCorp India", value: 450000, stage: "Proposal", probability: 60, owner: "Arun M.", closeDate: "2026-04-30", contacts: "Rajesh Kumar" },
+  { id: 2, title: "Cloud Migration Project", company: "Gulf Dynamics", value: 820000, stage: "Negotiation", probability: 80, owner: "Sneha P.", closeDate: "2026-03-31", contacts: "Ahmed Al-Rashid" },
+  { id: 3, title: "Software Audit & Compliance", company: "Innovate Solutions", value: 180000, stage: "Discovery", probability: 30, owner: "Vikram S.", closeDate: "2026-05-15", contacts: "Priya Sharma" },
+  { id: 4, title: "Digital Transformation", company: "NextGen Corp", value: 1200000, stage: "Demo", probability: 45, owner: "Arun M.", closeDate: "2026-06-01", contacts: "Sarah Mitchell" },
+  { id: 5, title: "Support Contract Renewal", company: "Apex Systems", value: 95000, stage: "Closed Won", probability: 100, owner: "Sneha P.", closeDate: "2026-03-10", contacts: "David Lee" },
+];
+
+const mockTasks = [
+  { id: 1, title: "Follow up with Ahmed on proposal", due: "2026-03-13", priority: "High", status: "Open", related: "Gulf Dynamics", assignee: "Arun M." },
+  { id: 2, title: "Prepare demo slides for NextGen Corp", due: "2026-03-15", priority: "High", status: "In Progress", related: "NextGen Corp", assignee: "Sneha P." },
+  { id: 3, title: "Send contract to Apex Systems", due: "2026-03-12", priority: "Medium", status: "Done", related: "Apex Systems", assignee: "Vikram S." },
+  { id: 4, title: "Call Priya about budget approval", due: "2026-03-14", priority: "Medium", status: "Open", related: "Innovate Solutions", assignee: "Arun M." },
+  { id: 5, title: "Update CRM with TechCorp meeting notes", due: "2026-03-16", priority: "Low", status: "Open", related: "TechCorp India", assignee: "Sneha P." },
+];
+
+const mockActivities = [
+  { id: 1, type: "Call", subject: "Discovery call with Ahmed", duration: "45 min", date: "2026-03-11", contact: "Ahmed Al-Rashid", notes: "Interested in full cloud migration. Budget approved internally." },
+  { id: 2, type: "Email", subject: "Proposal sent to TechCorp", duration: "-", date: "2026-03-10", contact: "Rajesh Kumar", notes: "Sent 12-page proposal including timeline and pricing." },
+  { id: 3, type: "Meeting", subject: "Demo session - NextGen Corp", duration: "1.5 hrs", date: "2026-03-09", contact: "Sarah Mitchell", notes: "Live demo of our service portfolio. Positive response." },
+  { id: 4, type: "Call", subject: "Follow-up with Priya", duration: "20 min", date: "2026-03-08", contact: "Priya Sharma", notes: "Budget still pending CFO approval." },
+];
+
+const mockCustomers = [
+  { id: 1, company: "Apex Systems", contact: "David Lee", email: "david@apex.com", phone: "+1 212 555 0199", industry: "Technology", revenue: "₹42L", since: "2024-01-15", health: "Healthy" },
+  { id: 2, company: "DataStream Ltd", contact: "Nora Hassan", email: "nora@datastream.io", phone: "+44 20 7946 0958", industry: "Finance", revenue: "₹78L", since: "2023-06-01", health: "At Risk" },
+  { id: 3, company: "Vertex Industries", contact: "Suresh Nair", email: "suresh@vertex.in", phone: "+91 99887 76655", industry: "Manufacturing", revenue: "₹25L", since: "2025-03-20", health: "Healthy" },
+];
+
+const STAGES = ["Discovery", "Demo", "Proposal", "Negotiation", "Closed Won", "Closed Lost"];
+const stageColors = {
+  "Discovery": "#6366f1", "Demo": "#f59e0b", "Proposal": "#00c2ff",
+  "Negotiation": "#f97316", "Closed Won": "#00e5a0", "Closed Lost": "#ff4d6a"
+};
+
+const statusColors = {
+  "New": "#6366f1", "Contacted": "#f59e0b", "Qualified": "#00e5a0", "Lost": "#ff4d6a"
+};
+
+const priorityColors = { "High": "#ff4d6a", "Medium": "#ffb020", "Low": "#00c2ff" };
+const taskStatusColors = { "Open": "#6b7fa3", "In Progress": "#f59e0b", "Done": "#00e5a0" };
+const healthColors = { "Healthy": "#00e5a0", "At Risk": "#ff4d6a", "Neutral": "#ffb020" };
+
+const fmt = (n) => `₹${(n / 100000).toFixed(1)}L`;
+
+// ── Sidebar ──────────────────────────────────────────────────────────────────
+const NAV = [
+  { id: "dashboard", icon: "⬡", label: "Dashboard" },
+  { id: "leads", icon: "◈", label: "Leads" },
+  { id: "deals", icon: "◉", label: "Pipeline" },
+  { id: "tasks", icon: "◻", label: "Tasks" },
+  { id: "activities", icon: "◷", label: "Activities" },
+  { id: "customers", icon: "◈", label: "Customers" },
+];
+
+function Sidebar({ active, setActive }) {
+  return (
+    <aside style={{
+      width: 220, background: theme.surface, borderRight: `1px solid ${theme.border}`,
+      display: "flex", flexDirection: "column", height: "100vh", position: "fixed", left: 0, top: 0, zIndex: 100,
+      fontFamily: "'DM Sans', sans-serif",
+    }}>
+      {/* Logo */}
+      <div style={{ padding: "28px 24px 20px", borderBottom: `1px solid ${theme.border}` }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: 10,
+            background: `linear-gradient(135deg, ${theme.accent}, #0044ff)`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 18, fontWeight: 800, color: "#fff", letterSpacing: -1,
+          }}>AT</div>
+          <div>
+            <div style={{ color: theme.text, fontWeight: 700, fontSize: 14, letterSpacing: 0.3 }}>Arctic Turns</div>
+            <div style={{ color: theme.textMuted, fontSize: 11 }}>CRM Internal</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Nav */}
+      <nav style={{ flex: 1, padding: "16px 12px", display: "flex", flexDirection: "column", gap: 4 }}>
+        {NAV.map(n => (
+          <button key={n.id} onClick={() => setActive(n.id)} style={{
+            display: "flex", alignItems: "center", gap: 12, padding: "10px 12px",
+            borderRadius: 10, border: "none", cursor: "pointer", textAlign: "left", width: "100%",
+            background: active === n.id ? theme.accentGlow : "transparent",
+            color: active === n.id ? theme.accent : theme.textMuted,
+            fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, fontWeight: active === n.id ? 600 : 400,
+            transition: "all 0.15s",
+            borderLeft: active === n.id ? `2px solid ${theme.accent}` : "2px solid transparent",
+          }}>
+            <span style={{ fontSize: 16 }}>{n.icon}</span>
+            {n.label}
+          </button>
+        ))}
+      </nav>
+
+      {/* User */}
+      <div style={{ padding: "16px", borderTop: `1px solid ${theme.border}` }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{
+            width: 32, height: 32, borderRadius: "50%",
+            background: `linear-gradient(135deg, #00e5a0, #00c2ff)`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 12, fontWeight: 700, color: "#0a0f1a",
+          }}>AM</div>
+          <div>
+            <div style={{ color: theme.text, fontSize: 12, fontWeight: 600 }}>Arun Mohan</div>
+            <div style={{ color: theme.textMuted, fontSize: 11 }}>Sales Manager</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+// ── Stat Card ─────────────────────────────────────────────────────────────────
+function StatCard({ label, value, sub, color = theme.accent }) {
+  return (
+    <div style={{
+      background: theme.surface, border: `1px solid ${theme.border}`,
+      borderRadius: 14, padding: "20px 24px",
+      borderTop: `2px solid ${color}`,
+    }}>
+      <div style={{ color: theme.textMuted, fontSize: 12, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>{label}</div>
+      <div style={{ color, fontSize: 28, fontWeight: 800, letterSpacing: -1 }}>{value}</div>
+      {sub && <div style={{ color: theme.textMuted, fontSize: 12, marginTop: 4 }}>{sub}</div>}
+    </div>
+  );
+}
+
+// ── Badge ─────────────────────────────────────────────────────────────────────
+function Badge({ text, color = theme.accent }) {
+  return (
+    <span style={{
+      background: `${color}22`, color, border: `1px solid ${color}44`,
+      borderRadius: 6, padding: "2px 10px", fontSize: 11, fontWeight: 600,
+    }}>{text}</span>
+  );
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+function Dashboard() {
+  const totalPipeline = mockDeals.filter(d => !d.stage.includes("Closed")).reduce((s, d) => s + d.value, 0);
+  const wonDeals = mockDeals.filter(d => d.stage === "Closed Won");
+  const openTasks = mockTasks.filter(t => t.status !== "Done").length;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <div>
+        <h1 style={{ color: theme.text, fontSize: 24, fontWeight: 800, margin: 0, letterSpacing: -0.5 }}>Good morning, Arun 👋</h1>
+        <p style={{ color: theme.textMuted, margin: "4px 0 0", fontSize: 14 }}>Here's what's happening at Arctic Turns today.</p>
+      </div>
+
+      {/* Stats */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
+        <StatCard label="Open Pipeline" value={fmt(totalPipeline)} sub="4 active deals" color={theme.accent} />
+        <StatCard label="Leads This Month" value={mockLeads.length} sub="+2 this week" color="#6366f1" />
+        <StatCard label="Revenue Won" value={fmt(wonDeals.reduce((s, d) => s + d.value, 0))} sub="1 deal closed" color={theme.success} />
+        <StatCard label="Open Tasks" value={openTasks} sub="2 due today" color={theme.warning} />
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 20 }}>
+        {/* Pipeline by Stage */}
+        <div style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 14, padding: 24 }}>
+          <h3 style={{ color: theme.text, fontSize: 14, fontWeight: 700, margin: "0 0 20px", textTransform: "uppercase", letterSpacing: 1 }}>Pipeline by Stage</h3>
+          {STAGES.slice(0, 5).map(stage => {
+            const deals = mockDeals.filter(d => d.stage === stage);
+            const total = deals.reduce((s, d) => s + d.value, 0);
+            const maxVal = 1200000;
+            const pct = Math.round((total / maxVal) * 100);
+            return (
+              <div key={stage} style={{ marginBottom: 14 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                  <span style={{ color: theme.textMuted, fontSize: 12 }}>{stage}</span>
+                  <span style={{ color: theme.text, fontSize: 12, fontWeight: 600 }}>{total ? fmt(total) : "—"}</span>
+                </div>
+                <div style={{ height: 6, background: theme.border, borderRadius: 4 }}>
+                  <div style={{ height: 6, width: `${pct}%`, background: stageColors[stage], borderRadius: 4, transition: "width 0.5s" }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Recent Activities */}
+        <div style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 14, padding: 24 }}>
+          <h3 style={{ color: theme.text, fontSize: 14, fontWeight: 700, margin: "0 0 20px", textTransform: "uppercase", letterSpacing: 1 }}>Recent Activities</h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {mockActivities.map(a => (
+              <div key={a.id} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                <div style={{
+                  width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                  background: a.type === "Call" ? "#6366f122" : a.type === "Email" ? "#00c2ff22" : "#00e5a022",
+                  color: a.type === "Call" ? "#6366f1" : a.type === "Email" ? "#00c2ff" : "#00e5a0",
+                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14,
+                }}>
+                  {a.type === "Call" ? "📞" : a.type === "Email" ? "✉️" : "🤝"}
+                </div>
+                <div>
+                  <div style={{ color: theme.text, fontSize: 13, fontWeight: 600 }}>{a.subject}</div>
+                  <div style={{ color: theme.textMuted, fontSize: 11 }}>{a.contact} · {a.date}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Upcoming Tasks */}
+      <div style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 14, padding: 24 }}>
+        <h3 style={{ color: theme.text, fontSize: 14, fontWeight: 700, margin: "0 0 16px", textTransform: "uppercase", letterSpacing: 1 }}>Upcoming Tasks</h3>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+          {mockTasks.filter(t => t.status !== "Done").map(t => (
+            <div key={t.id} style={{ background: theme.bg, border: `1px solid ${theme.border}`, borderRadius: 10, padding: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                <Badge text={t.priority} color={priorityColors[t.priority]} />
+                <span style={{ color: theme.textMuted, fontSize: 11 }}>Due {t.due}</span>
+              </div>
+              <div style={{ color: theme.text, fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{t.title}</div>
+              <div style={{ color: theme.textMuted, fontSize: 11 }}>{t.related} · {t.assignee}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Leads ─────────────────────────────────────────────────────────────────────
+function Leads() {
+  const [leads, setLeads] = useState(mockLeads);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ name: "", company: "", email: "", phone: "", status: "New", source: "Website", score: 50 });
+
+  const handleAdd = () => {
+    setLeads([...leads, { ...form, id: Date.now(), created: new Date().toISOString().slice(0, 10) }]);
+    setForm({ name: "", company: "", email: "", phone: "", status: "New", source: "Website", score: 50 });
+    setShowForm(false);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <h1 style={{ color: theme.text, fontSize: 22, fontWeight: 800, margin: 0 }}>Leads</h1>
+          <p style={{ color: theme.textMuted, margin: "2px 0 0", fontSize: 13 }}>{leads.length} total leads</p>
+        </div>
+        <button onClick={() => setShowForm(!showForm)} style={{
+          background: theme.accent, color: "#000", border: "none", borderRadius: 10,
+          padding: "10px 20px", fontWeight: 700, fontSize: 13, cursor: "pointer",
+          fontFamily: "'DM Sans', sans-serif",
+        }}>+ Add Lead</button>
+      </div>
+
+      {showForm && (
+        <div style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 14, padding: 24 }}>
+          <h3 style={{ color: theme.text, margin: "0 0 16px", fontSize: 15 }}>New Lead</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+            {[["name", "Full Name"], ["company", "Company"], ["email", "Email"], ["phone", "Phone"]].map(([k, label]) => (
+              <div key={k}>
+                <label style={{ color: theme.textMuted, fontSize: 11, display: "block", marginBottom: 4 }}>{label}</label>
+                <input value={form[k]} onChange={e => setForm({ ...form, [k]: e.target.value })} style={{
+                  width: "100%", background: theme.bg, border: `1px solid ${theme.border}`,
+                  borderRadius: 8, padding: "8px 12px", color: theme.text, fontSize: 13,
+                  fontFamily: "'DM Sans', sans-serif", boxSizing: "border-box",
+                }} />
+              </div>
+            ))}
+            <div>
+              <label style={{ color: theme.textMuted, fontSize: 11, display: "block", marginBottom: 4 }}>Status</label>
+              <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} style={{
+                width: "100%", background: theme.bg, border: `1px solid ${theme.border}`,
+                borderRadius: 8, padding: "8px 12px", color: theme.text, fontSize: 13,
+                fontFamily: "'DM Sans', sans-serif",
+              }}>
+                {["New", "Contacted", "Qualified", "Lost"].map(s => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={{ color: theme.textMuted, fontSize: 11, display: "block", marginBottom: 4 }}>Source</label>
+              <select value={form.source} onChange={e => setForm({ ...form, source: e.target.value })} style={{
+                width: "100%", background: theme.bg, border: `1px solid ${theme.border}`,
+                borderRadius: 8, padding: "8px 12px", color: theme.text, fontSize: 13,
+                fontFamily: "'DM Sans', sans-serif",
+              }}>
+                {["Website", "Referral", "LinkedIn", "Cold Call", "Event"].map(s => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+            <button onClick={handleAdd} style={{ background: theme.accent, color: "#000", border: "none", borderRadius: 8, padding: "8px 20px", fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>Save Lead</button>
+            <button onClick={() => setShowForm(false)} style={{ background: "transparent", color: theme.textMuted, border: `1px solid ${theme.border}`, borderRadius: 8, padding: "8px 20px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      <div style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 14, overflow: "hidden" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ borderBottom: `1px solid ${theme.border}` }}>
+              {["Name", "Company", "Email", "Phone", "Status", "Source", "Score", "Created"].map(h => (
+                <th key={h} style={{ padding: "12px 16px", textAlign: "left", color: theme.textMuted, fontSize: 11, textTransform: "uppercase", letterSpacing: 0.8, fontWeight: 600 }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {leads.map((l, i) => (
+              <tr key={l.id} style={{ borderBottom: i < leads.length - 1 ? `1px solid ${theme.border}` : "none", transition: "background 0.1s" }}
+                onMouseEnter={e => e.currentTarget.style.background = theme.surfaceHover}
+                onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                <td style={{ padding: "14px 16px", color: theme.text, fontWeight: 600, fontSize: 13 }}>{l.name}</td>
+                <td style={{ padding: "14px 16px", color: theme.textMuted, fontSize: 13 }}>{l.company}</td>
+                <td style={{ padding: "14px 16px", color: theme.accent, fontSize: 13 }}>{l.email}</td>
+                <td style={{ padding: "14px 16px", color: theme.textMuted, fontSize: 13 }}>{l.phone}</td>
+                <td style={{ padding: "14px 16px" }}><Badge text={l.status} color={statusColors[l.status]} /></td>
+                <td style={{ padding: "14px 16px", color: theme.textMuted, fontSize: 13 }}>{l.source}</td>
+                <td style={{ padding: "14px 16px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ width: 50, height: 4, background: theme.border, borderRadius: 2 }}>
+                      <div style={{ width: `${l.score}%`, height: 4, borderRadius: 2, background: l.score > 75 ? theme.success : l.score > 50 ? theme.warning : theme.danger }} />
+                    </div>
+                    <span style={{ color: theme.text, fontSize: 12, fontWeight: 600 }}>{l.score}</span>
+                  </div>
+                </td>
+                <td style={{ padding: "14px 16px", color: theme.textMuted, fontSize: 13 }}>{l.created}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ── Pipeline (Kanban) ─────────────────────────────────────────────────────────
+function Pipeline() {
+  const [deals, setDeals] = useState(mockDeals);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ title: "", company: "", value: "", stage: "Discovery", probability: 30, owner: "", closeDate: "", contacts: "" });
+  const [dragging, setDragging] = useState(null);
+  const [dragOver, setDragOver] = useState(null);
+
+  const handleDrop = (stage) => {
+    if (dragging !== null) {
+      setDeals(deals.map(d => d.id === dragging ? { ...d, stage } : d));
+      setDragging(null); setDragOver(null);
+    }
+  };
+
+  const handleAdd = () => {
+    setDeals([...deals, { ...form, id: Date.now(), value: Number(form.value) }]);
+    setForm({ title: "", company: "", value: "", stage: "Discovery", probability: 30, owner: "", closeDate: "", contacts: "" });
+    setShowForm(false);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20, height: "100%" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <h1 style={{ color: theme.text, fontSize: 22, fontWeight: 800, margin: 0 }}>Deal Pipeline</h1>
+          <p style={{ color: theme.textMuted, margin: "2px 0 0", fontSize: 13 }}>Drag deals between stages · {deals.length} total</p>
+        </div>
+        <button onClick={() => setShowForm(!showForm)} style={{
+          background: theme.accent, color: "#000", border: "none", borderRadius: 10,
+          padding: "10px 20px", fontWeight: 700, fontSize: 13, cursor: "pointer",
+          fontFamily: "'DM Sans', sans-serif",
+        }}>+ New Deal</button>
+      </div>
+
+      {showForm && (
+        <div style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 14, padding: 24 }}>
+          <h3 style={{ color: theme.text, margin: "0 0 16px", fontSize: 15 }}>New Deal</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+            {[["title", "Deal Title"], ["company", "Company"], ["value", "Value (₹)"], ["contacts", "Contact Name"], ["owner", "Owner"], ["closeDate", "Close Date"]].map(([k, label]) => (
+              <div key={k}>
+                <label style={{ color: theme.textMuted, fontSize: 11, display: "block", marginBottom: 4 }}>{label}</label>
+                <input value={form[k]} onChange={e => setForm({ ...form, [k]: e.target.value })}
+                  type={k === "closeDate" ? "date" : k === "value" ? "number" : "text"}
+                  style={{ width: "100%", background: theme.bg, border: `1px solid ${theme.border}`, borderRadius: 8, padding: "8px 12px", color: theme.text, fontSize: 13, fontFamily: "'DM Sans', sans-serif", boxSizing: "border-box" }} />
+              </div>
+            ))}
+            <div>
+              <label style={{ color: theme.textMuted, fontSize: 11, display: "block", marginBottom: 4 }}>Stage</label>
+              <select value={form.stage} onChange={e => setForm({ ...form, stage: e.target.value })} style={{ width: "100%", background: theme.bg, border: `1px solid ${theme.border}`, borderRadius: 8, padding: "8px 12px", color: theme.text, fontSize: 13, fontFamily: "'DM Sans', sans-serif" }}>
+                {STAGES.map(s => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+            <button onClick={handleAdd} style={{ background: theme.accent, color: "#000", border: "none", borderRadius: 8, padding: "8px 20px", fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>Save Deal</button>
+            <button onClick={() => setShowForm(false)} style={{ background: "transparent", color: theme.textMuted, border: `1px solid ${theme.border}`, borderRadius: 8, padding: "8px 20px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* Kanban */}
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(${STAGES.length}, 1fr)`, gap: 12, minHeight: 400 }}>
+        {STAGES.map(stage => {
+          const stageDeals = deals.filter(d => d.stage === stage);
+          const stageTotal = stageDeals.reduce((s, d) => s + d.value, 0);
+          return (
+            <div key={stage}
+              onDragOver={e => { e.preventDefault(); setDragOver(stage); }}
+              onDrop={() => handleDrop(stage)}
+              style={{
+                background: dragOver === stage ? `${stageColors[stage]}11` : theme.surface,
+                border: `1px solid ${dragOver === stage ? stageColors[stage] : theme.border}`,
+                borderTop: `3px solid ${stageColors[stage]}`,
+                borderRadius: 12, padding: 14, minHeight: 200,
+                transition: "all 0.15s",
+              }}>
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ color: theme.text, fontWeight: 700, fontSize: 12, textTransform: "uppercase", letterSpacing: 0.8 }}>{stage}</div>
+                <div style={{ color: theme.textMuted, fontSize: 11, marginTop: 2 }}>{stageDeals.length} deal{stageDeals.length !== 1 ? "s" : ""} · {stageTotal ? fmt(stageTotal) : "—"}</div>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {stageDeals.map(d => (
+                  <div key={d.id} draggable
+                    onDragStart={() => setDragging(d.id)}
+                    style={{
+                      background: theme.bg, border: `1px solid ${theme.border}`,
+                      borderRadius: 10, padding: 12, cursor: "grab",
+                      transition: "box-shadow 0.15s",
+                    }}>
+                    <div style={{ color: theme.text, fontSize: 12, fontWeight: 700, marginBottom: 6 }}>{d.title}</div>
+                    <div style={{ color: theme.textMuted, fontSize: 11, marginBottom: 8 }}>{d.company}</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ color: theme.accent, fontWeight: 800, fontSize: 13 }}>{fmt(d.value)}</span>
+                      <span style={{ color: theme.success, fontSize: 11, fontWeight: 600 }}>{d.probability}%</span>
+                    </div>
+                    <div style={{ color: theme.textDim, fontSize: 10, marginTop: 6 }}>Close: {d.closeDate}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Tasks ─────────────────────────────────────────────────────────────────────
+function Tasks() {
+  const [tasks, setTasks] = useState(mockTasks);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ title: "", due: "", priority: "Medium", status: "Open", related: "", assignee: "" });
+
+  const handleAdd = () => {
+    setTasks([...tasks, { ...form, id: Date.now() }]);
+    setForm({ title: "", due: "", priority: "Medium", status: "Open", related: "", assignee: "" });
+    setShowForm(false);
+  };
+
+  const toggleStatus = (id) => {
+    setTasks(tasks.map(t => t.id === id ? { ...t, status: t.status === "Done" ? "Open" : "Done" } : t));
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <h1 style={{ color: theme.text, fontSize: 22, fontWeight: 800, margin: 0 }}>Tasks & Follow-ups</h1>
+          <p style={{ color: theme.textMuted, margin: "2px 0 0", fontSize: 13 }}>{tasks.filter(t => t.status !== "Done").length} open · {tasks.filter(t => t.status === "Done").length} completed</p>
+        </div>
+        <button onClick={() => setShowForm(!showForm)} style={{ background: theme.accent, color: "#000", border: "none", borderRadius: 10, padding: "10px 20px", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>+ Add Task</button>
+      </div>
+
+      {showForm && (
+        <div style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 14, padding: 24 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr", gap: 12 }}>
+            {[["title", "Task Title"], ["related", "Related To"], ["assignee", "Assignee"]].map(([k, label]) => (
+              <div key={k}>
+                <label style={{ color: theme.textMuted, fontSize: 11, display: "block", marginBottom: 4 }}>{label}</label>
+                <input value={form[k]} onChange={e => setForm({ ...form, [k]: e.target.value })} style={{ width: "100%", background: theme.bg, border: `1px solid ${theme.border}`, borderRadius: 8, padding: "8px 12px", color: theme.text, fontSize: 13, fontFamily: "'DM Sans', sans-serif", boxSizing: "border-box" }} />
+              </div>
+            ))}
+            <div>
+              <label style={{ color: theme.textMuted, fontSize: 11, display: "block", marginBottom: 4 }}>Due Date</label>
+              <input type="date" value={form.due} onChange={e => setForm({ ...form, due: e.target.value })} style={{ width: "100%", background: theme.bg, border: `1px solid ${theme.border}`, borderRadius: 8, padding: "8px 12px", color: theme.text, fontSize: 13, fontFamily: "'DM Sans', sans-serif", boxSizing: "border-box" }} />
+            </div>
+            <div>
+              <label style={{ color: theme.textMuted, fontSize: 11, display: "block", marginBottom: 4 }}>Priority</label>
+              <select value={form.priority} onChange={e => setForm({ ...form, priority: e.target.value })} style={{ width: "100%", background: theme.bg, border: `1px solid ${theme.border}`, borderRadius: 8, padding: "8px 12px", color: theme.text, fontSize: 13, fontFamily: "'DM Sans', sans-serif" }}>
+                {["High", "Medium", "Low"].map(p => <option key={p}>{p}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+            <button onClick={handleAdd} style={{ background: theme.accent, color: "#000", border: "none", borderRadius: 8, padding: "8px 20px", fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>Save Task</button>
+            <button onClick={() => setShowForm(false)} style={{ background: "transparent", color: theme.textMuted, border: `1px solid ${theme.border}`, borderRadius: 8, padding: "8px 20px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {tasks.map(t => (
+          <div key={t.id} style={{
+            background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 12, padding: "14px 18px",
+            display: "flex", alignItems: "center", gap: 16, opacity: t.status === "Done" ? 0.5 : 1,
+            transition: "all 0.15s",
+          }}>
+            <div onClick={() => toggleStatus(t.id)} style={{
+              width: 20, height: 20, borderRadius: 6, border: `2px solid ${t.status === "Done" ? theme.success : theme.border}`,
+              background: t.status === "Done" ? theme.success : "transparent", cursor: "pointer", flexShrink: 0,
+              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#000",
+            }}>{t.status === "Done" ? "✓" : ""}</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ color: t.status === "Done" ? theme.textMuted : theme.text, fontWeight: 600, fontSize: 13, textDecoration: t.status === "Done" ? "line-through" : "none" }}>{t.title}</div>
+              <div style={{ color: theme.textMuted, fontSize: 11, marginTop: 3 }}>{t.related} · {t.assignee}</div>
+            </div>
+            <Badge text={t.priority} color={priorityColors[t.priority]} />
+            <Badge text={t.status} color={taskStatusColors[t.status]} />
+            <span style={{ color: theme.textMuted, fontSize: 12 }}>Due {t.due}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Activities ─────────────────────────────────────────────────────────────────
+function Activities() {
+  const [activities, setActivities] = useState(mockActivities);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ type: "Call", subject: "", duration: "", date: "", contact: "", notes: "" });
+
+  const handleAdd = () => {
+    setActivities([{ ...form, id: Date.now() }, ...activities]);
+    setForm({ type: "Call", subject: "", duration: "", date: "", contact: "", notes: "" });
+    setShowForm(false);
+  };
+
+  const typeIcon = { "Call": "📞", "Email": "✉️", "Meeting": "🤝" };
+  const typeColor = { "Call": "#6366f1", "Email": "#00c2ff", "Meeting": "#00e5a0" };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <h1 style={{ color: theme.text, fontSize: 22, fontWeight: 800, margin: 0 }}>Activities</h1>
+          <p style={{ color: theme.textMuted, margin: "2px 0 0", fontSize: 13 }}>Calls, emails & meetings log</p>
+        </div>
+        <button onClick={() => setShowForm(!showForm)} style={{ background: theme.accent, color: "#000", border: "none", borderRadius: 10, padding: "10px 20px", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>+ Log Activity</button>
+      </div>
+
+      {showForm && (
+        <div style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 14, padding: 24 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+            <div>
+              <label style={{ color: theme.textMuted, fontSize: 11, display: "block", marginBottom: 4 }}>Type</label>
+              <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })} style={{ width: "100%", background: theme.bg, border: `1px solid ${theme.border}`, borderRadius: 8, padding: "8px 12px", color: theme.text, fontSize: 13, fontFamily: "'DM Sans', sans-serif" }}>
+                {["Call", "Email", "Meeting"].map(t => <option key={t}>{t}</option>)}
+              </select>
+            </div>
+            {[["subject", "Subject"], ["contact", "Contact"], ["duration", "Duration"], ["date", "Date"]].map(([k, label]) => (
+              <div key={k}>
+                <label style={{ color: theme.textMuted, fontSize: 11, display: "block", marginBottom: 4 }}>{label}</label>
+                <input type={k === "date" ? "date" : "text"} value={form[k]} onChange={e => setForm({ ...form, [k]: e.target.value })} style={{ width: "100%", background: theme.bg, border: `1px solid ${theme.border}`, borderRadius: 8, padding: "8px 12px", color: theme.text, fontSize: 13, fontFamily: "'DM Sans', sans-serif", boxSizing: "border-box" }} />
+              </div>
+            ))}
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label style={{ color: theme.textMuted, fontSize: 11, display: "block", marginBottom: 4 }}>Notes</label>
+              <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={3} style={{ width: "100%", background: theme.bg, border: `1px solid ${theme.border}`, borderRadius: 8, padding: "8px 12px", color: theme.text, fontSize: 13, fontFamily: "'DM Sans', sans-serif", resize: "vertical", boxSizing: "border-box" }} />
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+            <button onClick={handleAdd} style={{ background: theme.accent, color: "#000", border: "none", borderRadius: 8, padding: "8px 20px", fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>Log Activity</button>
+            <button onClick={() => setShowForm(false)} style={{ background: "transparent", color: theme.textMuted, border: `1px solid ${theme.border}`, borderRadius: 8, padding: "8px 20px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {activities.map(a => (
+          <div key={a.id} style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 12, padding: 18, display: "flex", gap: 16 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: `${typeColor[a.type]}22`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
+              {typeIcon[a.type]}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                <div style={{ color: theme.text, fontWeight: 700, fontSize: 14 }}>{a.subject}</div>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <Badge text={a.type} color={typeColor[a.type]} />
+                  <span style={{ color: theme.textMuted, fontSize: 12 }}>{a.date}</span>
+                </div>
+              </div>
+              <div style={{ color: theme.textMuted, fontSize: 12, marginBottom: 6 }}>{a.contact} {a.duration !== "-" ? `· Duration: ${a.duration}` : ""}</div>
+              <div style={{ color: theme.textDim, fontSize: 13, background: theme.bg, borderRadius: 8, padding: "8px 12px", borderLeft: `3px solid ${typeColor[a.type]}` }}>{a.notes}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Customers ─────────────────────────────────────────────────────────────────
+function Customers() {
+  const [customers, setCustomers] = useState(mockCustomers);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ company: "", contact: "", email: "", phone: "", industry: "", revenue: "", since: "", health: "Healthy" });
+
+  const handleAdd = () => {
+    setCustomers([...customers, { ...form, id: Date.now() }]);
+    setForm({ company: "", contact: "", email: "", phone: "", industry: "", revenue: "", since: "", health: "Healthy" });
+    setShowForm(false);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <h1 style={{ color: theme.text, fontSize: 22, fontWeight: 800, margin: 0 }}>Customer Accounts</h1>
+          <p style={{ color: theme.textMuted, margin: "2px 0 0", fontSize: 13 }}>{customers.length} active accounts</p>
+        </div>
+        <button onClick={() => setShowForm(!showForm)} style={{ background: theme.accent, color: "#000", border: "none", borderRadius: 10, padding: "10px 20px", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>+ Add Customer</button>
+      </div>
+
+      {showForm && (
+        <div style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 14, padding: 24 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+            {[["company", "Company"], ["contact", "Contact Name"], ["email", "Email"], ["phone", "Phone"], ["industry", "Industry"], ["revenue", "Revenue"]].map(([k, label]) => (
+              <div key={k}>
+                <label style={{ color: theme.textMuted, fontSize: 11, display: "block", marginBottom: 4 }}>{label}</label>
+                <input value={form[k]} onChange={e => setForm({ ...form, [k]: e.target.value })} style={{ width: "100%", background: theme.bg, border: `1px solid ${theme.border}`, borderRadius: 8, padding: "8px 12px", color: theme.text, fontSize: 13, fontFamily: "'DM Sans', sans-serif", boxSizing: "border-box" }} />
+              </div>
+            ))}
+            <div>
+              <label style={{ color: theme.textMuted, fontSize: 11, display: "block", marginBottom: 4 }}>Customer Since</label>
+              <input type="date" value={form.since} onChange={e => setForm({ ...form, since: e.target.value })} style={{ width: "100%", background: theme.bg, border: `1px solid ${theme.border}`, borderRadius: 8, padding: "8px 12px", color: theme.text, fontSize: 13, fontFamily: "'DM Sans', sans-serif", boxSizing: "border-box" }} />
+            </div>
+            <div>
+              <label style={{ color: theme.textMuted, fontSize: 11, display: "block", marginBottom: 4 }}>Account Health</label>
+              <select value={form.health} onChange={e => setForm({ ...form, health: e.target.value })} style={{ width: "100%", background: theme.bg, border: `1px solid ${theme.border}`, borderRadius: 8, padding: "8px 12px", color: theme.text, fontSize: 13, fontFamily: "'DM Sans', sans-serif" }}>
+                {["Healthy", "At Risk", "Neutral"].map(h => <option key={h}>{h}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+            <button onClick={handleAdd} style={{ background: theme.accent, color: "#000", border: "none", borderRadius: 8, padding: "8px 20px", fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>Save Customer</button>
+            <button onClick={() => setShowForm(false)} style={{ background: "transparent", color: theme.textMuted, border: `1px solid ${theme.border}`, borderRadius: 8, padding: "8px 20px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+        {customers.map(c => (
+          <div key={c.id} style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 14, padding: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: `${theme.accent}22`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, color: theme.accent }}>
+                {c.company[0]}
+              </div>
+              <Badge text={c.health} color={healthColors[c.health]} />
+            </div>
+            <div style={{ color: theme.text, fontWeight: 800, fontSize: 15, marginBottom: 4 }}>{c.company}</div>
+            <div style={{ color: theme.textMuted, fontSize: 12, marginBottom: 12 }}>{c.industry}</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, borderTop: `1px solid ${theme.border}`, paddingTop: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: theme.textMuted, fontSize: 12 }}>Contact</span>
+                <span style={{ color: theme.text, fontSize: 12, fontWeight: 600 }}>{c.contact}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: theme.textMuted, fontSize: 12 }}>Revenue</span>
+                <span style={{ color: theme.success, fontSize: 12, fontWeight: 700 }}>{c.revenue}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: theme.textMuted, fontSize: 12 }}>Since</span>
+                <span style={{ color: theme.text, fontSize: 12 }}>{c.since}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: theme.textMuted, fontSize: 12 }}>Email</span>
+                <span style={{ color: theme.accent, fontSize: 12 }}>{c.email}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Reports ───────────────────────────────────────────────────────────────────
+function Reports() {
+  const totalPipeline = mockDeals.reduce((s, d) => s + d.value, 0);
+  const wonValue = mockDeals.filter(d => d.stage === "Closed Won").reduce((s, d) => s + d.value, 0);
+  const byStage = STAGES.map(s => ({ stage: s, count: mockDeals.filter(d => d.stage === s).length, value: mockDeals.filter(d => d.stage === s).reduce((a, d) => a + d.value, 0) }));
+  const bySource = ["Referral", "LinkedIn", "Website", "Cold Call", "Event"].map(src => ({ source: src, count: mockLeads.filter(l => l.source === src).length }));
+  const maxSource = Math.max(...bySource.map(b => b.count));
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div>
+        <h1 style={{ color: theme.text, fontSize: 22, fontWeight: 800, margin: 0 }}>Reports & Analytics</h1>
+        <p style={{ color: theme.textMuted, margin: "2px 0 0", fontSize: 13 }}>Overview of pipeline, leads, and performance</p>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
+        <StatCard label="Total Pipeline" value={fmt(totalPipeline)} sub="All active deals" color={theme.accent} />
+        <StatCard label="Won Revenue" value={fmt(wonValue)} sub="This quarter" color={theme.success} />
+        <StatCard label="Win Rate" value={`${Math.round((wonValue / totalPipeline) * 100)}%`} sub="By value" color="#6366f1" />
+        <StatCard label="Avg Deal Size" value={fmt(totalPipeline / mockDeals.length)} sub="Across all deals" color={theme.warning} />
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 20 }}>
+        {/* Stage breakdown */}
+        <div style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 14, padding: 24 }}>
+          <h3 style={{ color: theme.text, fontSize: 14, fontWeight: 700, margin: "0 0 20px", textTransform: "uppercase", letterSpacing: 1 }}>Deal Value by Stage</h3>
+          {byStage.map(b => (
+            <div key={b.stage} style={{ marginBottom: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                <span style={{ color: theme.textMuted, fontSize: 13 }}>{b.stage}</span>
+                <span style={{ color: theme.text, fontSize: 13, fontWeight: 700 }}>{b.value ? fmt(b.value) : "—"} <span style={{ color: theme.textMuted, fontWeight: 400 }}>({b.count})</span></span>
+              </div>
+              <div style={{ height: 8, background: theme.border, borderRadius: 4 }}>
+                <div style={{ height: 8, width: `${totalPipeline ? (b.value / totalPipeline) * 100 : 0}%`, background: stageColors[b.stage], borderRadius: 4 }} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Lead source */}
+        <div style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 14, padding: 24 }}>
+          <h3 style={{ color: theme.text, fontSize: 14, fontWeight: 700, margin: "0 0 20px", textTransform: "uppercase", letterSpacing: 1 }}>Leads by Source</h3>
+          {bySource.map((b, i) => {
+            const colors = [theme.accent, "#6366f1", theme.success, theme.warning, theme.danger];
+            return (
+              <div key={b.source} style={{ marginBottom: 14 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                  <span style={{ color: theme.textMuted, fontSize: 13 }}>{b.source}</span>
+                  <span style={{ color: theme.text, fontSize: 13, fontWeight: 600 }}>{b.count}</span>
+                </div>
+                <div style={{ height: 6, background: theme.border, borderRadius: 3 }}>
+                  <div style={{ height: 6, width: `${maxSource ? (b.count / maxSource) * 100 : 0}%`, background: colors[i], borderRadius: 3 }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Deal table */}
+      <div style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 14, overflow: "hidden" }}>
+        <div style={{ padding: "16px 20px", borderBottom: `1px solid ${theme.border}` }}>
+          <h3 style={{ color: theme.text, fontSize: 14, fontWeight: 700, margin: 0, textTransform: "uppercase", letterSpacing: 1 }}>All Deals Summary</h3>
+        </div>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ borderBottom: `1px solid ${theme.border}` }}>
+              {["Deal", "Company", "Value", "Stage", "Probability", "Owner", "Close Date"].map(h => (
+                <th key={h} style={{ padding: "10px 16px", textAlign: "left", color: theme.textMuted, fontSize: 11, textTransform: "uppercase", letterSpacing: 0.8, fontWeight: 600 }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {mockDeals.map((d, i) => (
+              <tr key={d.id} style={{ borderBottom: i < mockDeals.length - 1 ? `1px solid ${theme.border}` : "none" }}>
+                <td style={{ padding: "12px 16px", color: theme.text, fontWeight: 600, fontSize: 13 }}>{d.title}</td>
+                <td style={{ padding: "12px 16px", color: theme.textMuted, fontSize: 13 }}>{d.company}</td>
+                <td style={{ padding: "12px 16px", color: theme.accent, fontSize: 13, fontWeight: 700 }}>{fmt(d.value)}</td>
+                <td style={{ padding: "12px 16px" }}><Badge text={d.stage} color={stageColors[d.stage]} /></td>
+                <td style={{ padding: "12px 16px", color: d.probability >= 70 ? theme.success : d.probability >= 40 ? theme.warning : theme.danger, fontWeight: 700, fontSize: 13 }}>{d.probability}%</td>
+                <td style={{ padding: "12px 16px", color: theme.textMuted, fontSize: 13 }}>{d.owner}</td>
+                <td style={{ padding: "12px 16px", color: theme.textMuted, fontSize: 13 }}>{d.closeDate}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ── App ───────────────────────────────────────────────────────────────────────
+export default function App() {
+  const [active, setActive] = useState("dashboard");
+
+  const pages = { dashboard: <Dashboard />, leads: <Leads />, deals: <Pipeline />, tasks: <Tasks />, activities: <Activities />, customers: <Customers />, reports: <Reports /> };
+
+  return (
+    <div style={{ background: theme.bg, minHeight: "100vh", fontFamily: "'DM Sans', sans-serif", color: theme.text }}>
+      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+      <Sidebar active={active} setActive={setActive} />
+      <main style={{ marginLeft: 220, padding: "32px 36px", minHeight: "100vh", boxSizing: "border-box" }}>
+        {pages[active] || <Dashboard />}
+      </main>
+    </div>
+  );
+}
